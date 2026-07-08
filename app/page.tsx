@@ -8,8 +8,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-export default function Dashboard() {
-  function AISymptomChecker() {
+ function AISymptomChecker() {
   const [symptoms, setSymptoms] = useState("");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,7 +32,6 @@ export default function Dashboard() {
       setLoading(false);
     }, 1000);
   };
-
   return (
     <div className="bg-slate-800 p-6 rounded-lg shadow-md mt-6 text-white border border-blue-500 max-w-4xl mx-auto">
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
@@ -67,6 +65,8 @@ export default function Dashboard() {
     </div>
   );
 }
+
+export default function Dashboard() {
   const [stats, setStats] = useState({ owners: 0, pets: 0, appointments: 0 });
   const [birthdayPets, setBirthdayPets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

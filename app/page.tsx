@@ -8,7 +8,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
- function AISymptomChecker() {
+function AISymptomChecker() {
   const [symptoms, setSymptoms] = useState("");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,6 +32,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
       setLoading(false);
     }, 1000);
   };
+
   return (
     <div className="bg-slate-800 p-6 rounded-lg shadow-md mt-6 text-white border border-blue-500 max-w-4xl mx-auto">
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
@@ -86,7 +87,6 @@ export default function Dashboard() {
         });
 
         // ၂။ ရက်ချိန်းရှိပြီး ယနေ့မွေးနေ့ဖြစ်နေသော အကောင်များကို ရှာခြင်း (Mission အရ)
-        // အလွယ်ဆုံးစစ်ရန်အတွက် ယနေ့ မွေးနေ့ရှိသော အကောင်များကို ဆွဲယူခြင်း
         const today = new Date();
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
@@ -161,7 +161,7 @@ export default function Dashboard() {
       </div>
 
       {/* Mission Section: မွေးနေ့ရှင် ရက်ချိန်းစာရင်း */}
-      <div className="bg-gray-800 p-6 rounded-xl border border-purple-500/30">
+      <div className="bg-gray-800 p-6 rounded-xl border border-purple-500/30 mb-8">
         <div className="flex items-center gap-2 mb-4">
           <Cake className="text-pink-400" size={24} />
           <h2 className="text-xl font-semibold text-purple-300">🎂 ယနေ့ မွေးနေ့ရှင် ရက်ချိန်းစာရင်း</h2>
@@ -196,7 +196,9 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* 🤖 AI Symptom Checker ကွက်တိ နေရာမှန်ဝင်သွားပြီဖြစ်သောနေရာ */}
+      <AISymptomChecker />
     </div>
   );
-  <AISymptomChecker />
 }

@@ -9,6 +9,64 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Dashboard() {
+  function AISymptomChecker() {
+  const [symptoms, setSymptoms] = useState("");
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleCheck = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!symptoms) return;
+    setLoading(true);
+    
+    setTimeout(() => {
+      const text = symptoms.toLowerCase();
+      if (text.includes("fever") || text.includes("hot")) {
+        setResult("⚠️ Potential Infection or Flu. Recommendation: Check temperature, keep hydrated, and schedule a blood test.");
+      } else if (text.includes("cough") || text.includes("breathe")) {
+        setResult("⚠️ Respiratory Issue detected. Recommendation: Isolate pet from dust, check for asthma, and humidify the room.");
+      } else if (text.includes("vomit") || text.includes("diarrhea")) {
+        setResult("⚠️ Gastrointestinal Distress. Recommendation: Fast the pet for 12 hours, offer small amounts of water, check for toxic food intake.");
+      } else {
+        setResult("💡 General Symptoms. Recommendation: Monitor for 24 hours. If symptoms persist, conduct a physical examination.");
+      }
+      setLoading(false);
+    }, 1000);
+  };
+
+  return (
+    <div className="bg-slate-800 p-6 rounded-lg shadow-md mt-6 text-white border border-blue-500 max-w-4xl mx-auto">
+      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+        🤖 AI Symptom Checker
+      </h2>
+      <form onSubmit={handleCheck} className="space-y-4">
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">Enter Pet's Symptoms (e.g., fever, cough, vomiting):</label>
+          <input
+            type="text"
+            value={symptoms}
+            onChange={(e) => setSymptoms(e.target.value)}
+            placeholder="Describe what's wrong with the pet..."
+            className="w-full p-2 rounded bg-slate-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+        <button
+          type="submit"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-semibold transition"
+          disabled={loading}
+        >
+          {loading ? "Analyzing..." : "Analyze Symptoms"}
+        </button>
+      </form>
+      
+      {result && (
+        <div className="mt-4 p-4 bg-slate-900 rounded border-l-4 border-blue-400">
+          <p className="text-sm font-medium">{result}</p>
+        </div>
+      )}
+    </div>
+  );
+}
   const [stats, setStats] = useState({ owners: 0, pets: 0, appointments: 0 });
   const [birthdayPets, setBirthdayPets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,4 +198,5 @@ export default function Dashboard() {
       </div>
     </div>
   );
+  <AISymptomChecker />
 }

@@ -69,7 +69,7 @@ function AISymptomChecker() {
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ owners: 0, pets: 0, appointments: 0 });
-  const [birthdayPets, setBirthdayPets] = useState<any[]>([]);
+  const [allAppointmentPets, setAllAppointmentPets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -85,10 +85,10 @@ export default function Dashboard() {
           appointments: appointmentsCount || 0,
         });
 
+        // ယနေ့ ရက်စွဲကို ရယူမယ် (2026 წლის ဇူလိုင် 15 ရက်)
         const today = new Date();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const birthdayString = `-${month}-${day}`;
+        const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
+        const currentDay = String(today.getDate()).padStart(2, '0');
 
         const { data: petsWithAppointments } = await supabase
           .from("appointments")
@@ -98,23 +98,29 @@ export default function Dashboard() {
             pets ( id, name, type, date_of_birth )
           `);
 
-        const filtered: any[] = [];
+        const mappedData: any[] = [];
         petsWithAppointments?.forEach((app: any) => {
-          if (app.pets && app.pets.date_of_birth && app.pets.date_of_birth.includes(birthdayString)) {
+          if (app.pets && app.pets.date_of_birth) {
             const dob = new Date(app.pets.date_of_birth);
+            const petMonth = String(dob.getMonth() + 1).padStart(2, '0');
+            const petDay = String(dob.getDate()).padStart(2, '0');
+            
+            // ယနေ့ကျရောက်တဲ့ မွေးနေ့စစ်စစ် ဟုတ်မဟုတ် စစ်ဆေးခြင်း
+            const isBirthdayToday = (petMonth === currentMonth && petDay === currentDay);
             const formattedDob = `${dob.getMonth() + 1}/${dob.getDate()}`;
 
-            filtered.push({
+            mappedData.push({
               id: app.id,
               petName: app.pets.name,
               type: app.pets.type,
               dob: formattedDob,
+              isBirthday: isBirthdayToday,
               date: new Date(app.appointment_date).toLocaleDateString()
             });
           }
         });
 
-        setBirthdayPets(filtered);
+        setAllAppointmentPets(mappedData);
 
       } catch (error) {
         console.error("Error:", error);
@@ -167,8 +173,8 @@ export default function Dashboard() {
 
         {loading ? (
           <p className="text-gray-400">အချက်အလက်များ ရှာဖွေနေပါသည်...</p>
-        ) : birthdayPets.length === 0 ? (
-          <p className="text-gray-500 italic">ယနေ့ ရက်ချိန်းရှိသော မွေးနေ့ရှင် တိရစ္ဆာန်မရှိပါ။</p>
+        ) : allAppointmentPets.length === 0 ? (
+          <p className="text-gray-500 italic">ရက်ချိန်းရှိသော တိရစ္ဆာန်မရှိပါ။</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -182,13 +188,21 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {birthdayPets.map((pet) => (
+                {allAppointmentPets.map((pet) => (
                   <tr key={pet.id} className="border-b border-gray-800 text-sm hover:bg-gray-750">
                     <td className="py-3 font-medium text-teal-300">{pet.petName}</td>
                     <td className="py-3 text-gray-300">{pet.type}</td>
-                    <td className="py-3 text-pink-400 font-semibold">{pet.dob} (ယနေ့)</td>
+                    <td className={`py-3 font-semibold ${pet.isBirthday ? 'text-pink-400' : 'text-gray-400'}`}>
+                      {pet.dob} {pet.isBirthday && "(ယနေ့)"}
+                    </td>
                     <td className="py-3 text-gray-300">{pet.date}</td>
-                    <td className="py-3"><span className="bg-pink-500/10 text-pink-400 px-2 py-0.5 rounded text-xs font-semibold">🎉 Birthday Match!</span></td>
+                    <td className="py-3">
+                      {pet.isBirthday ? (
+                        <span className="bg-pink-500/10 text-pink-400 px-2 py-0.5 rounded text-xs font-semibold">🎉 Birthday Match!</span>
+                      ) : (
+                        <span className="text-gray-500 text-xs">-</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

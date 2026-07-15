@@ -85,7 +85,7 @@ export default function Dashboard() {
           appointments: appointmentsCount || 0,
         });
 
-        // ယနေ့ ရက်စွဲကို ရယူမယ် (2026 წლის ဇူလိုင် 15 ရက်)
+        // 7/15 (ယနေ့ရက်စွဲ) ကို dynamic အမှန်တကယ်စစ်ဆေးဖို့ ရယူခြင်း
         const today = new Date();
         const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
         const currentDay = String(today.getDate()).padStart(2, '0');
@@ -105,7 +105,7 @@ export default function Dashboard() {
             const petMonth = String(dob.getMonth() + 1).padStart(2, '0');
             const petDay = String(dob.getDate()).padStart(2, '0');
             
-            // ယနေ့ကျရောက်တဲ့ မွေးနေ့စစ်စစ် ဟုတ်မဟုတ် စစ်ဆေးခြင်း
+            // လ နှင့် ရက် နှစ်ခုလုံး တိုက်ဆိုင်မှသာ true ဖြစ်စေမည့် logic
             const isBirthdayToday = (petMonth === currentMonth && petDay === currentDay);
             const formattedDob = `${dob.getMonth() + 1}/${dob.getDate()}`;
 

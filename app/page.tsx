@@ -85,7 +85,7 @@ export default function Dashboard() {
           appointments: appointmentsCount || 0,
         });
 
-        // 7/15 (ယနေ့ရက်စွဲ) ကို dynamic အမှန်တကယ်စစ်ဆေးဖို့ ရယူခြင်း
+        // ယနေ့ရက်စွဲ (July 15) ကို ရယူခြင်း
         const today = new Date();
         const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
         const currentDay = String(today.getDate()).padStart(2, '0');
@@ -101,21 +101,22 @@ export default function Dashboard() {
         const mappedData: any[] = [];
         petsWithAppointments?.forEach((app: any) => {
           if (app.pets && app.pets.date_of_birth) {
+            // ဒေတာဘေ့စ်ထဲက တကယ့် မွေးနေ့ရက်စွဲ (DOB) ကို ယူခြင်း
             const dob = new Date(app.pets.date_of_birth);
             const petMonth = String(dob.getMonth() + 1).padStart(2, '0');
             const petDay = String(dob.getDate()).padStart(2, '0');
             
-            // လ နှင့် ရက် နှစ်ခုလုံး တိုက်ဆိုင်မှသာ true ဖြစ်စေမည့် logic
+            // ယနေ့ (7/15) နှင့် ကွက်တိတိုက်ဆိုင်မှု ရှိမရှိ စစ်ဆေးခြင်း
             const isBirthdayToday = (petMonth === currentMonth && petDay === currentDay);
-            const formattedDob = `${dob.getMonth() + 1}/${dob.getDate()}`;
+            const formattedDob = `${dob.getMonth() + 1}/${dob.getDate()}/${dob.getFullYear()}`;
 
             mappedData.push({
               id: app.id,
               petName: app.pets.name,
               type: app.pets.type,
-              dob: formattedDob,
+              dob: formattedDob, // မွေးနေ့စစ်စစ် ကောလံအတွက်
               isBirthday: isBirthdayToday,
-              date: new Date(app.appointment_date).toLocaleDateString()
+              appointmentDate: new Date(app.appointment_date).toLocaleDateString() // ရက်ချိန်းနေ့စွဲ ကောလံအတွက်
             });
           }
         });
@@ -192,10 +193,12 @@ export default function Dashboard() {
                   <tr key={pet.id} className="border-b border-gray-800 text-sm hover:bg-gray-750">
                     <td className="py-3 font-medium text-teal-300">{pet.petName}</td>
                     <td className="py-3 text-gray-300">{pet.type}</td>
+                    {/* မွေးနေ့စစ်စစ် ကောလံတွင် တကယ့် DOB ကို ပြသပေးခြင်း */}
                     <td className={`py-3 font-semibold ${pet.isBirthday ? 'text-pink-400' : 'text-gray-400'}`}>
                       {pet.dob} {pet.isBirthday && "(ယနေ့)"}
                     </td>
-                    <td className="py-3 text-gray-300">{pet.date}</td>
+                    {/* ရက်ချိန်းနေ့စွဲ ကောလံတွင် တကယ့် Appointment Date ကို ပြသပေးခြင်း */}
+                    <td className="py-3 text-gray-300">{pet.appointmentDate}</td>
                     <td className="py-3">
                       {pet.isBirthday ? (
                         <span className="bg-pink-500/10 text-pink-400 px-2 py-0.5 rounded text-xs font-semibold">🎉 Birthday Match!</span>

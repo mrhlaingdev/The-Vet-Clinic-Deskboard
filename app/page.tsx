@@ -69,8 +69,9 @@ function AISymptomChecker() {
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ owners: 0, pets: 0, appointments: 0 });
-  const [birthdayPets, setBirthdayPets] = useState<any[]>([]); // မွေးနေ့ရှင်များအတွက်
-  const [allPetsList, setAllPetsList] = useState<any[]>([]); // တိရစ္ဆာန် စာရင်းအကုန်လုံးအတွက်
+  const [birthdayPets, setBirthdayPets] = useState<any[]>([]); // မွေးနေ့ရှင်များ
+  const [allPetsList, setAllPetsList] = useState<any[]>([]); // တိရစ္ဆာန် စာရင်းအကုန်
+  const [medicalRecords, setMedicalRecords] = useState<any[]>([]); // ဆေးမှတ်တမ်းများ
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -103,7 +104,21 @@ export default function Dashboard() {
       
       setAllPetsList(petsData || []);
 
-      // ၂။ ဒီနေ့ လနဲ့ ရက်ကို String အဖြစ် ရယူခြင်း
+      // ၂။ ဆေးမှတ်တမ်းစာရင်းအားလုံးကို ဆွဲယူခြင်း (သတ်မှတ်ထားသော ပိုင်ရှင်/တိရစ္ဆာန်နာမည်ပါတွဲယူရန်)
+      const { data: recordsData } = await supabase
+        .from("medical_records")
+        .select(`
+          id,
+          diagnosis,
+          treatment,
+          visit_date,
+          pets ( name, type )
+        `)
+        .order("visit_date", { ascending: false });
+
+      setMedicalRecords(recordsData || []);
+
+      // ၃။ ဒီနေ့ လနဲ့ ရက်ကို String အဖြစ် ရယူပြီး မွေးနေ့စစ်ထုတ်ခြင်း
       const today = new Date();
       const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
       const currentDay = String(today.getDate()).padStart(2, '0');
@@ -116,18 +131,15 @@ export default function Dashboard() {
           let petDay = "";
 
           if (pet.date_of_birth.includes("-")) {
-            // Format: YYYY-MM-DD
             const parts = pet.date_of_birth.split("-");
             petMonth = parts[1].padStart(2, '0');
             petDay = parts[2].padStart(2, '0');
           } else if (pet.date_of_birth.includes("/")) {
-            // Format: MM/DD/YYYY
             const parts = pet.date_of_birth.split("/");
             petMonth = parts[0].padStart(2, '0');
             petDay = parts[1].padStart(2, '0');
           }
 
-          // လ နှင့် ရက် တူညီပါက မွေးနေ့ရှင်အဖြစ် သတ်မှတ်မည်
           if (petMonth === currentMonth && petDay === currentDay) {
             birthdayMatched.push({
               id: pet.id,
@@ -142,7 +154,7 @@ export default function Dashboard() {
 
       setBirthdayPets(birthdayMatched);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -172,7 +184,7 @@ export default function Dashboard() {
       
       setShowPetModal(false);
       setPetForm({ name: "", type: "", breed: "", date_of_birth: "" });
-      await fetchData(); // Refresh Dashboard Data
+      await fetchData(); 
       alert("New Pet Profile Added Successfully!");
     } catch (err: any) {
       alert(err.message || "Failed to add pet");
@@ -201,6 +213,7 @@ export default function Dashboard() {
 
       setShowRecordModal(false);
       setRecordForm({ pet_id: "", diagnosis: "", treatment: "" });
+      await fetchData(); // Table ကို ချက်ချင်း Update ဖြစ်စေရန် ပြန်ခေါ်ခြင်း
       alert("Medical Record Added Successfully!");
     } catch (err: any) {
       alert(err.message || "Failed to add medical record");
@@ -305,7 +318,46 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* TABLE 2: တိရစ္ဆာန် စာရင်းအကုန်လုံး (ALL PETS LIST) */}
+          {/* TABLE 2: ဆေးကုသမှုမှတ်တမ်းများ (NEWLY ADDED) */}
+          <div className="bg-gray-800 p-6 rounded-xl border border-purple-500/30">
+            <div className="flex items-center gap-2 mb-4">
+              <Clipboard className="text-purple-400" size={24} />
+              <h2 className="text-xl font-semibold text-purple-300">📋 ဆေးကုသမှု မှတ်တမ်းများ (Medical Records)</h2>
+            </div>
+
+            {loading ? (
+              <p className="text-gray-400">အချက်အလက်များ ရှာဖွေနေပါသည်...</p>
+            ) : medicalRecords.length === 0 ? (
+              <p className="text-gray-500 italic py-2">ဆေးကုသမှုမှတ်တမ်း မရှိသေးပါ။</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-700 text-gray-400 text-sm">
+                      <th className="pb-3">အကောင်နာမည်</th>
+                      <th className="pb-3">အမျိုးအစား</th>
+                      <th className="pb-3">ရောဂါအမည် (Diagnosis)</th>
+                      <th className="pb-3">ကုသမှု/ဆေးညွှန်း</th>
+                      <th className="pb-3">ပြသသည့်နေ့စွဲ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {medicalRecords.map((record) => (
+                      <tr key={record.id} className="border-b border-gray-800 text-sm hover:bg-gray-750">
+                        <td className="py-3 font-medium text-purple-300">{record.pets?.name || "Unknown"}</td>
+                        <td className="py-3 text-gray-300">{record.pets?.type || "-"}</td>
+                        <td className="py-3 text-white font-semibold">{record.diagnosis}</td>
+                        <td className="py-3 text-gray-300">{record.treatment}</td>
+                        <td className="py-3 text-gray-400">{record.visit_date ? new Date(record.visit_date).toLocaleDateString() : "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* TABLE 3: တိရစ္ဆာန် စာရင်းအကုန်လုံး (ALL PETS LIST) */}
           <div className="bg-gray-800 p-6 rounded-xl border border-teal-500/30">
             <div className="flex items-center gap-2 mb-4">
               <PawPrint className="text-teal-400" size={24} />
@@ -416,9 +468,11 @@ export default function Dashboard() {
                   onChange={(e) => setRecordForm({...recordForm, pet_id: e.target.value})}
                   className="w-full p-2 rounded bg-gray-750 text-white border border-gray-600 focus:outline-none focus:border-purple-500"
                 >
-                  <option value="">-- Choose a Pet --</option>
+                  <option value="" className="bg-gray-800 text-white">-- Choose a Pet --</option>
                   {allPetsList.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                    <option key={p.id} value={p.id} className="bg-gray-800 text-white">
+                      {p.name} ({p.type})
+                    </option>
                   ))}
                 </select>
               </div>
@@ -456,5 +510,5 @@ export default function Dashboard() {
       )}
 
     </div>
-  );
+  )
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { Users, Calendar, Activity, Cake, PlusCircle, Clipboard } from "lucide-react";
+import { Users, Calendar, Activity, Cake, PlusCircle, Clipboard, PawPrint } from "lucide-react";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -69,8 +69,8 @@ function AISymptomChecker() {
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ owners: 0, pets: 0, appointments: 0 });
-  const [allAppointmentPets, setAllAppointmentPets] = useState<any[]>([]);
-  const [allPetsList, setAllPetsList] = useState<any[]>([]); // Dropdown အတွက် Pet စာရင်း
+  const [birthdayPets, setBirthdayPets] = useState<any[]>([]); // မွေးနေ့ရှင်များအတွက်
+  const [allPetsList, setAllPetsList] = useState<any[]>([]); // တိရစ္ဆာန် စာရင်းအကုန်လုံးအတွက်
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -95,10 +95,15 @@ export default function Dashboard() {
         appointments: appointmentsCount || 0,
       });
 
-      // Fetch all pets for select dropdown
-      const { data: rawPets } = await supabase.from("pets").select("id, name");
-      setAllPetsList(rawPets || []);
+      // 1. တိရစ္ဆာန် စာရင်းအကုန်လုံးကို ဆွဲယူခြင်း (All Pets Table အတွက်)
+      const { data: petsData } = await supabase
+        .from("pets")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      setAllPetsList(petsData || []);
 
+      // 2. ယနေ့ မွေးနေ့ကျရောက်သော တိရစ္ဆာန်များကို တိုက်ဆိုင်စစ်ဆေးခြင်း
       const today = new Date();
       const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
       const currentDay = String(today.getDate()).padStart(2, '0');
@@ -111,28 +116,27 @@ export default function Dashboard() {
           pets ( id, name, type, date_of_birth )
         `);
 
-      const mappedData: any[] = [];
+      const birthdayMatched: any[] = [];
       petsWithAppointments?.forEach((app: any) => {
         if (app.pets && app.pets.date_of_birth) {
           const dob = new Date(app.pets.date_of_birth);
           const petMonth = String(dob.getMonth() + 1).padStart(2, '0');
           const petDay = String(dob.getDate()).padStart(2, '0');
           
-          const isBirthdayToday = (petMonth === currentMonth && petDay === currentDay);
-          const formattedDob = `${dob.getMonth() + 1}/${dob.getDate()}/${dob.getFullYear()}`;
-
-          mappedData.push({
-            id: app.id,
-            petName: app.pets.name,
-            type: app.pets.type,
-            dob: formattedDob,
-            isBirthday: isBirthdayToday,
-            appointmentDate: new Date(app.appointment_date).toLocaleDateString()
-          });
+          // ယနေ့နှင့် မွေးနေ့တူသော တိရစ္ဆာန်များကိုပဲ သီးသန့်စစ်ထုတ်ခြင်း
+          if (petMonth === currentMonth && petDay === currentDay) {
+            birthdayMatched.push({
+              id: app.id,
+              petName: app.pets.name,
+              type: app.pets.type,
+              dob: `${dob.getMonth() + 1}/${dob.getDate()}/${dob.getFullYear()}`,
+              appointmentDate: new Date(app.appointment_date).toLocaleDateString()
+            });
+          }
         }
       });
 
-      setAllAppointmentPets(mappedData);
+      setBirthdayPets(birthdayMatched);
     } catch (error) {
       console.error("Error:", error);
     } finally {
@@ -250,56 +254,93 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Main Grid Layout for Data & AI */}
+      {/* Main Content Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        {/* Table List Column */}
-        <div className="bg-gray-800 p-6 rounded-xl border border-purple-500/30 lg:col-span-2">
-          <div className="flex items-center gap-2 mb-4">
-            <Cake className="text-pink-400" size={24} />
-            <h2 className="text-xl font-semibold text-purple-300">🎂 ယနေ့ မွေးနေ့ရှင် ရက်ချိန်းစာရင်း</h2>
+        
+        {/* Left Column: Tables Section */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* TABLE 1: ယနေ့ မွေးနေ့ရှင် ရက်ချိန်းစာရင်း */}
+          <div className="bg-gray-800 p-6 rounded-xl border border-pink-500/30">
+            <div className="flex items-center gap-2 mb-4">
+              <Cake className="text-pink-400" size={24} />
+              <h2 className="text-xl font-semibold text-pink-300">🎂 ယနေ့ မွေးနေ့ရှင် ရက်ချိန်းစာရင်း</h2>
+            </div>
+
+            {loading ? (
+              <p className="text-gray-400">အချက်အလက်များ ရှာဖွေနေပါသည်...</p>
+            ) : birthdayPets.length === 0 ? (
+              <p className="text-gray-500 italic py-2">ယနေ့ မွေးနေ့ကျရောက်သော ရက်ချိန်းမရှိပါ။</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-700 text-gray-400 text-sm">
+                      <th className="pb-3">အကောင်နာမည်</th>
+                      <th className="pb-3">အမျိုးအစား</th>
+                      <th className="pb-3">မွေးနေ့စစ်စစ်</th>
+                      <th className="pb-3">ရက်ချိန်းနေ့စွဲ</th>
+                      <th className="pb-3">အခြေအနေ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {birthdayPets.map((pet) => (
+                      <tr key={pet.id} className="border-b border-gray-800 text-sm hover:bg-gray-750">
+                        <td className="py-3 font-medium text-teal-300">{pet.petName}</td>
+                        <td className="py-3 text-gray-300">{pet.type}</td>
+                        <td className="py-3 font-semibold text-pink-400">{pet.dob} (ယနေ့)</td>
+                        <td className="py-3 text-gray-300">{pet.appointmentDate}</td>
+                        <td className="py-3">
+                          <span className="bg-pink-500/10 text-pink-400 px-2 py-0.5 rounded text-xs font-semibold">🎉 Birthday Match!</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
-          {loading ? (
-            <p className="text-gray-400">အချက်အလက်များ ရှာဖွေနေပါသည်...</p>
-          ) : allAppointmentPets.length === 0 ? (
-            <p className="text-gray-500 italic">ရက်ချိန်းရှိသော တိရစ္ဆာန်မရှိပါ။</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-700 text-gray-400 text-sm">
-                    <th className="pb-3">အကောင်နာမည်</th>
-                    <th className="pb-3">အမျိုးအစား</th>
-                    <th className="pb-3">မွေးနေ့စစ်စစ်</th>
-                    <th className="pb-3">ရက်ချိန်းနေ့စွဲ</th>
-                    <th className="pb-3">အခြေအနေ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allAppointmentPets.map((pet) => (
-                    <tr key={pet.id} className="border-b border-gray-800 text-sm hover:bg-gray-750">
-                      <td className="py-3 font-medium text-teal-300">{pet.petName}</td>
-                      <td className="py-3 text-gray-300">{pet.type}</td>
-                      <td className={`py-3 font-semibold ${pet.isBirthday ? 'text-pink-400' : 'text-gray-400'}`}>
-                        {pet.dob} {pet.isBirthday && "(ယနေ့)"}
-                      </td>
-                      <td className="py-3 text-gray-300">{pet.appointmentDate}</td>
-                      <td className="py-3">
-                        {pet.isBirthday ? (
-                          <span className="bg-pink-500/10 text-pink-400 px-2 py-0.5 rounded text-xs font-semibold">🎉 Birthday Match!</span>
-                        ) : (
-                          <span className="text-gray-500 text-xs">-</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* TABLE 2: တိရစ္ဆာန် စာရင်းအကုန်လုံး (ALL PETS LIST) */}
+          <div className="bg-gray-800 p-6 rounded-xl border border-teal-500/30">
+            <div className="flex items-center gap-2 mb-4">
+              <PawPrint className="text-teal-400" size={24} />
+              <h2 className="text-xl font-semibold text-teal-300">🐾 ဆေးခန်းရှိ တိရစ္ဆာန် စာရင်းအကုန်လုံး (All Pets)</h2>
             </div>
-          )}
+
+            {loading ? (
+              <p className="text-gray-400">အချက်အလက်များ ရှာဖွေနေပါသည်...</p>
+            ) : allPetsList.length === 0 ? (
+              <p className="text-gray-500 italic">တိရစ္ဆာန် စာရင်း မရှိသေးပါ။</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-700 text-gray-400 text-sm">
+                      <th className="pb-3">အကောင်နာမည်</th>
+                      <th className="pb-3">အမျိုးအစား</th>
+                      <th className="pb-3">မျိုးစိတ် (Breed)</th>
+                      <th className="pb-3">မွေးနေ့</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allPetsList.map((pet) => (
+                      <tr key={pet.id} className="border-b border-gray-800 text-sm hover:bg-gray-750">
+                        <td className="py-3 font-medium text-teal-300">{pet.name}</td>
+                        <td className="py-3 text-gray-300">{pet.type}</td>
+                        <td className="py-3 text-gray-400">{pet.breed || "-"}</td>
+                        <td className="py-3 text-gray-400">{pet.date_of_birth ? new Date(pet.date_of_birth).toLocaleDateString() : "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
         </div>
 
-        {/* AI Column */}
+        {/* Right Column: AI Symptom Checker */}
         <div className="flex flex-col justify-start">
           <AISymptomChecker />
         </div>

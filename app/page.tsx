@@ -95,7 +95,7 @@ export default function Dashboard() {
         appointments: appointmentsCount || 0,
       });
 
-      // 1. တိရစ္ဆာန် စာရင်းအကုန်လုံးကို ဆွဲယူခြင်း (All Pets Table အတွက်)
+      // ၁။ တိရစ္ဆာန် စာရင်းအကုန်လုံးကို ဆွဲယူခြင်း
       const { data: petsData } = await supabase
         .from("pets")
         .select("*")
@@ -103,34 +103,38 @@ export default function Dashboard() {
       
       setAllPetsList(petsData || []);
 
-      // 2. ယနေ့ မွေးနေ့ကျရောက်သော တိရစ္ဆာန်များကို တိုက်ဆိုင်စစ်ဆေးခြင်း
+      // ၂။ ဒီနေ့ လနဲ့ ရက်ကို String အဖြစ် ရယူခြင်း
       const today = new Date();
       const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
       const currentDay = String(today.getDate()).padStart(2, '0');
 
-      const { data: petsWithAppointments } = await supabase
-        .from("appointments")
-        .select(`
-          id,
-          appointment_date,
-          pets ( id, name, type, date_of_birth )
-        `);
-
       const birthdayMatched: any[] = [];
-      petsWithAppointments?.forEach((app: any) => {
-        if (app.pets && app.pets.date_of_birth) {
-          const dob = new Date(app.pets.date_of_birth);
-          const petMonth = String(dob.getMonth() + 1).padStart(2, '0');
-          const petDay = String(dob.getDate()).padStart(2, '0');
-          
-          // ယနေ့နှင့် မွေးနေ့တူသော တိရစ္ဆာန်များကိုပဲ သီးသန့်စစ်ထုတ်ခြင်း
+
+      petsData?.forEach((pet: any) => {
+        if (pet.date_of_birth) {
+          let petMonth = "";
+          let petDay = "";
+
+          if (pet.date_of_birth.includes("-")) {
+            // Format: YYYY-MM-DD
+            const parts = pet.date_of_birth.split("-");
+            petMonth = parts[1].padStart(2, '0');
+            petDay = parts[2].padStart(2, '0');
+          } else if (pet.date_of_birth.includes("/")) {
+            // Format: MM/DD/YYYY
+            const parts = pet.date_of_birth.split("/");
+            petMonth = parts[0].padStart(2, '0');
+            petDay = parts[1].padStart(2, '0');
+          }
+
+          // လ နှင့် ရက် တူညီပါက မွေးနေ့ရှင်အဖြစ် သတ်မှတ်မည်
           if (petMonth === currentMonth && petDay === currentDay) {
             birthdayMatched.push({
-              id: app.id,
-              petName: app.pets.name,
-              type: app.pets.type,
-              dob: `${dob.getMonth() + 1}/${dob.getDate()}/${dob.getFullYear()}`,
-              appointmentDate: new Date(app.appointment_date).toLocaleDateString()
+              id: pet.id,
+              petName: pet.name,
+              type: pet.type,
+              dob: pet.date_of_birth,
+              appointmentDate: "Today's Birthday"
             });
           }
         }
